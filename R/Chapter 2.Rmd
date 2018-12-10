@@ -1,0 +1,103 @@
+# SMALL WORLDS AND LARGE WORLDS
+
+## Grid tossing example
+
+In the context of the globe tossing problem, grid approximation works extremely well.
+So let’s build a grid approximation for the model we’ve constructed so far. Here is the recipe:
+
+1.  Define the grid. This means you decide how many points to use in estimating the
+posterior, and then you make a list of the parameter values on the grid.  
+2.  Compute the value of the prior at each parameter value on the grid.  
+3.  Compute the likelihood at each parameter value.  
+4.  Compute the unstandardized posterior at each parameter value, by multiplying the
+prior by the likelihood.  
+5.  Finally, standardize the posterior, by dividing each value by the sum of all values.  
+In the globe tossing context, here’s the code to complete all five of these steps:  
+
+
+```{r rcode 2.3}
+# define grid
+p_grid <- seq( from=0 , to=1 , length.out=20 )
+# define prior
+prior <- rep( 1 , 20 )
+# compute likelihood at each value in grid
+likelihood <- dbinom( 6 , size=9 , prob=p_grid ) # 6 is number of waters, 9 is total sample, prob is vector of probalities
+# compute product of likelihood and prior
+unstd.posterior <- likelihood * prior
+# standardize the posterior, so it sums to 1
+posterior <- unstd.posterior / sum(unstd.posterior)
+
+
+```
+The above code makes a grid of only 20 points. To display the posterior distribution now:
+
+```{r rcode 2.4}
+plot( p_grid , posterior , type="b" ,
+xlab="probability of water" , ylab="posterior probability" )
+mtext( "20 points" )
+```
+
+Experiment with various gid sizes and prior shapes
+
+```{r rcode 2.5}
+# define grid
+gridsize <- 2000
+
+p_grid <- seq( from=0 , to=1 , length.out= gridsize)
+# define prior
+prior <- rep( 1, gridsize )
+
+## assume more than half world is water
+#prior <- ifelse( p_grid < 0.5 , 0 , 1 ) 2.5
+
+## crazy prior
+#prior <- exp( -5*abs( p_grid - 0.5 ) )
+
+# compute likelihood at each value in grid
+likelihood <- dbinom(6 , size=9 , prob= p_grid )
+# compute product of likelihood and prior
+unstd.posterior <- likelihood * prior
+# standardize the posterior, so it sums to 1
+posterior <- unstd.posterior / sum(unstd.posterior)
+
+plot( p_grid , posterior , type="b" ,
+xlab="probability of water" , ylab="posterior probability" )
+mtext(paste(gridsize, " points" ))
+      
+```
+
+##Quadratic approximation
+
+Quadratic approximation is an alternative to grid approximation, which partly overcomes the limiting factor of grid approximation which will very quickly becaome unmanageable when number of parameters increase.
+
+*".. for two parameters approximated by 100 values each, that’s already $100^2$ = 10000 values to compute. For 10 parameters, the grid becomes many billions
+of values."*
+
+*"A Gaussian approximation is called “quadratic approximation” because the logarithm of
+a Gaussian distribution forms a parabola. And a parabola is a quadratic function. So this
+approximation essentially represents any log-posterior with a parabola."*
+
+The Rethninking package provides quadratic approximations in the following form: Mcelreath is keen for the student to get used to writing out the standard notaion for describing models, which makes sense and helps embed the ideas
+
+```{r message=FALSE}
+## R code 2.6
+options(mc.cores = parallel::detectCores())  ### reccomended option to get best out of STAN
+
+
+library(rethinking)
+globe.qa <- quap(
+    alist(
+        W ~ dbinom( W+L ,p) ,  # binomial likelihood
+        p ~ dunif(0,1)     # uniform prior
+    ) ,
+    data=list(W=6,L=3) )
+
+# display summary of quadratic approximation
+precis( globe.qa )
+```
+
+
+
+
+
+
