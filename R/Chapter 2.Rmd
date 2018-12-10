@@ -96,8 +96,57 @@ globe.qa <- quap(
 precis( globe.qa )
 ```
 
+Compare an analytical version  (exact) pf the model to the equivalen quadratic approximation
+
+```{r}
+# analytical calculation 2.7
+W <- 6
+L <- 3
+curve( dbeta( x , W+1 , L+1 ) , from=0 , to=1 )
+# quadratic approximation
+curve( dnorm( x , 0.67 , 0.16 ) , lty=2 , add=TRUE )
+```
+
+at small samples the approximation is Meh, but as sample increases approximation does too
 
 
+*"The quadratic approximation, either with a uniform
+prior or with a lot of data, is often equivalent to a maximum likelihood estimate (MLE) and its
+standard error. The MLE is a very common non-Bayesian parameter estimate. This correspondence
+between a Bayesian approximation and a common non-Bayesian estimator is both a blessing
+and a curse. It is a blessing, because it allows us to re-interpret a wide range of published non-Bayesian
+model fits in Bayesian terms. It is a curse, because maximum likelihood estimates have some curious
+drawbacks, and can share them. We’ll explore these in later chapters."*
+
+## Monte Carlo 
+
+Here is an example of MCMC run in the rethinking package
+
+
+```{r}
+n_samples <- 10000
+p <- rep( NA , n_samples )
+p[1] <- 0.5
+W <- 6
+L <- 3
+for ( i in 2:n_samples ) {
+p_new <- rnorm( 1 , p[i-1] , 0.1 )
+if ( p_new < 0 ) p_new <- abs( p_new )
+if ( p_new > 1 ) p_new <- 2 - p_new
+q0 <- dbinom( W , W+L , p[i-1] )
+q1 <- dbinom( W , W+L , p_new )
+p[i] <- ifelse( runif(1) < q1/q0 , p_new , p[i-1] )
+
+}
+```
+
+and here is the analyical comparison
+
+```{r}
+dens( p , xlim=c(0,1) )
+curve( dbeta( x , W+1 , L+1 ) , lty=2 , add=TRUE )
+```
+ not bad!!
 
 
 
